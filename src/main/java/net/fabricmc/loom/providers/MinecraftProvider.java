@@ -147,7 +147,7 @@ public class MinecraftProvider extends DependencyProvider {
 			}
 		} else if ("1.14_combat-212796".equalsIgnoreCase(minecraftVersion)) {
 			project.getLogger().debug("Downloading Minecraft combat version manifest");
-			DownloadUtil.downloadIfChanged(new URL("https://pastebin.com/raw/6uHYrAyh"), MINECRAFT_JSON, project.getLogger());
+			DownloadUtil.downloadIfChanged(new URL("http://pastebin.com/raw/6uHYrAyh"), MINECRAFT_JSON, project.getLogger());
 		} else {
 			throw new RuntimeException("Failed to find minecraft version: " + minecraftVersion);
 		}
