@@ -31,6 +31,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 import net.fabricmc.loom.util.*;
 import net.fabricmc.stitch.merge.JarMerger;
 
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
@@ -147,7 +148,7 @@ public class MinecraftProvider extends DependencyProvider {
 			}
 		} else if ("1.14_combat-212796".equalsIgnoreCase(minecraftVersion)) {
 			project.getLogger().debug("Downloading Minecraft combat version manifest");
-			DownloadUtil.downloadIfChanged(new URL("http://pastebin.com/raw/6uHYrAyh"), MINECRAFT_JSON, project.getLogger());
+			FileUtils.copyURLToFile(new URL("https://pastebin.com/raw/6uHYrAyh"), MINECRAFT_JSON);
 		} else {
 			throw new RuntimeException("Failed to find minecraft version: " + minecraftVersion);
 		}
