@@ -47,6 +47,9 @@ import java.util.Map;
 import java.util.jar.*;
 
 public class GenSourcesTask extends DefaultLoomTask {
+
+	public boolean intermediary = false;
+
 	public static File getSourcesJar(Project project) {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
@@ -65,7 +68,7 @@ public class GenSourcesTask extends DefaultLoomTask {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MinecraftLibraryProvider libraryProvider = extension.getMinecraftProvider().libraryProvider;
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
-		File mappedJar = mappingsProvider.mappedProvider.getMappedJar();
+		File mappedJar = intermediary ? mappingsProvider.mappedProvider.getIntermediaryJar() : mappingsProvider.mappedProvider.getMappedJar();
 		File sourcesJar = getSourcesJar(project);
 
 		Manifest manifest = new Manifest();
