@@ -233,8 +233,8 @@ public class MappingSplat implements Iterable<CombinedMapping> {
 			Mapping other = fallback.get(notch);
 			CombinedMapping combined = this.mappings.get(notch);
 			if (other == null || combined == null) {
-				System.err.println("Missing " + (other == null ? combined == null ? "both" : "from mappings" : "from combined"));
-				throw new IllegalStateException("Extra mappings missing from fallback! Unable to find " + notch + " (" + mapping.to + ')');
+				System.err.println("Warning: Missing " + (other == null ? combined == null ? "both" : "from mappings" : "from combined") + ": " + notch + " (" + mapping.to + ")");
+				continue;
 			}
 
 			for (Method method : mapping.methods()) {
