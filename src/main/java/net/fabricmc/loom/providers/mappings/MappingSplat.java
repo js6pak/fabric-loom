@@ -186,6 +186,7 @@ public class MappingSplat implements Iterable<CombinedMapping> {
 			Mapping other = mappings.get(notch);
 
 			String inter = either(mapping.to, notch);
+			if (other.to == null) other = mappings.get(inter);
 			String name = findName(other.to, inter, notch, mappings);
 			assert !inter.equals(notch) || name.equals(notch);
 
