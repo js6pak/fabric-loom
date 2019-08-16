@@ -104,7 +104,7 @@ public class MappingsProvider extends DependencyProvider {
 
 		project.getLogger().lifecycle(":setting up mappings (" + dependency.getDependency().getName() + " " + dependency.getResolvedVersion() + ")");
 
-		String version = dependency.getResolvedVersion();
+		String version = extension.mappingsVersion != null ? extension.mappingsVersion : dependency.getResolvedVersion();
 		File mappingsJar = dependency.resolveFile().orElseThrow(() -> new RuntimeException("Could not find dependency " + dependency));
 
 		this.mappingsName = dependency.getDependency().getName();

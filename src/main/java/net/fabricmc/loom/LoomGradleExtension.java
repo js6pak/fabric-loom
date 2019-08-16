@@ -49,6 +49,7 @@ public class LoomGradleExtension {
 	public boolean remapMod = true;
 	public boolean autoGenIDERuns = true;
 	public boolean extractJars = false;
+	public String mappingsVersion;
 
 	private File atFile;
 	private List<File> unmappedModsBuilt = new ArrayList<>();
