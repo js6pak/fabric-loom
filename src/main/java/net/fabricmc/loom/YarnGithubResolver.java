@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -49,7 +50,7 @@ public class YarnGithubResolver {
 	};
 	final Function<Path, FileCollection> fileFactory;
 	private final Path globalCache, projectCache;
-	private final File mcJar;
+	private final Supplier<File> mcJar;
 	final Logger logger;
 
 	static void createDirectory(Path path) {
@@ -68,7 +69,7 @@ public class YarnGithubResolver {
 		projectCache = extension.getRootProjectPersistentCache().toPath();
 		createDirectory(projectCache);
 
-		mcJar = extension.getMinecraftProvider().getMergedJar();
+		mcJar = () -> extension.getMinecraftProvider().getMergedJar();
 
 		logger = project.getLogger();
 		fileFactory = project::files;
@@ -199,7 +200,7 @@ public class YarnGithubResolver {
 				}
 
 				try {
-					AlphaMcpConverter.convert(mcJar, mcpFile, destination);
+					AlphaMcpConverter.convert(mcJar.get(), mcpFile, destination);
 				} catch (IOException e) {
 					throw new RuntimeException("Unable to convert from MCP", e);
 				}
