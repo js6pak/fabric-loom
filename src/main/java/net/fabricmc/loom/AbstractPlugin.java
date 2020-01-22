@@ -162,8 +162,8 @@ public class AbstractPlugin implements Plugin<Project> {
 					project.getLogger().lifecycle(":setting java compiler args");
 					try {
 						Collections.addAll(javaCompileTask.getOptions().getCompilerArgs(),
-							"-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath(),
-							"-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath(),
+							"-AinMapFileNamedOfficial=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath(),
+							"-AoutMapFileNamedOfficial=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath(),
 							"-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.getRefmapName()).getCanonicalPath(),
 							"-AdefaultObfuscationEnv=named:official");
 					} catch (IOException e) {
@@ -188,10 +188,10 @@ public class AbstractPlugin implements Plugin<Project> {
 				project.getLogger().warn(":configuring scala compilation processing");
 
 				try {
-					task.getOptions().getCompilerArgs().add("-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
-					task.getOptions().getCompilerArgs().add("-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
+					task.getOptions().getCompilerArgs().add("-AinMapFileNamedOfficial=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath());
+					task.getOptions().getCompilerArgs().add("-AoutMapFileNamedOfficial=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath());
 					task.getOptions().getCompilerArgs().add("-AoutRefMapFile=" + new File(task.getDestinationDir(), extension.getRefmapName()).getCanonicalPath());
-					task.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:intermediary");
+					task.getOptions().getCompilerArgs().add("-AdefaultObfuscationEnv=named:official");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
