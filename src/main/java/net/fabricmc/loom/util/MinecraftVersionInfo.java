@@ -105,6 +105,9 @@ public class MinecraftVersionInfo {
 		}
 
 		public boolean allowed() {
+			if (this.artifact != null && "org.ow2.asm".equals(this.artifact.domain))
+				return false;
+
 			if (this.rules == null || this.rules.length <= 0) {
 				return true;
 			}
