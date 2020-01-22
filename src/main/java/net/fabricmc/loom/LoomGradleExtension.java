@@ -184,7 +184,7 @@ public class LoomGradleExtension {
 	}
 
 	@Nullable
-	private static Dependency findDependency(Project p, Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
+	static Dependency findDependency(Project p, Collection<Configuration> configs, BiPredicate<String, String> groupNameFilter) {
 		for (Configuration config : configs) {
 			for (Dependency dependency : config.getDependencies()) {
 				String group = dependency.getGroup();

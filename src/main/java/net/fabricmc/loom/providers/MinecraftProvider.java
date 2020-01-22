@@ -186,9 +186,13 @@ public class MinecraftProvider extends PhysicalDependencyProvider {
 			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("client").url), MINECRAFT_CLIENT_JAR, logger);
 		}
 
-		if (!MINECRAFT_SERVER_JAR.exists() || !Checksum.equals(MINECRAFT_SERVER_JAR, versionInfo.downloads.get("server").sha1) && StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_SERVER_JAR.toPath())) {
-			logger.debug("Downloading Minecraft {} server jar", minecraftVersion);
-			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), MINECRAFT_SERVER_JAR, logger);
+		if (!versionInfo.downloads.containsKey("server")) {
+			Files.copy(MINECRAFT_CLIENT_JAR, MINECRAFT_SERVER_JAR);
+		} else {
+			if (!MINECRAFT_SERVER_JAR.exists() || !Checksum.equals(MINECRAFT_SERVER_JAR, versionInfo.downloads.get("server").sha1) && StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_SERVER_JAR.toPath())) {
+				logger.debug("Downloading Minecraft {} server jar", minecraftVersion);
+				DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), MINECRAFT_SERVER_JAR, logger);
+			}
 		}
 	}
 

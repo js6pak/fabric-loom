@@ -14,13 +14,8 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Objects;
-import java.util.Set;
 import java.util.function.Function;
 
 import org.gradle.api.Action;
@@ -50,6 +45,7 @@ public class YarnGithubResolver {
 	};
 	final Function<Path, FileCollection> fileFactory;
 	private final Path globalCache, projectCache;
+	private final File mcJar;
 	final Logger logger;
 
 	static void createDirectory(Path path) {
@@ -67,6 +63,8 @@ public class YarnGithubResolver {
 		createDirectory(globalCache);
 		projectCache = extension.getRootProjectPersistentCache().toPath();
 		createDirectory(projectCache);
+
+		mcJar = extension.getMinecraftProvider().getMergedJar();
 
 		logger = project.getLogger();
 		fileFactory = project::files;
@@ -157,6 +155,68 @@ public class YarnGithubResolver {
 		DownloadSpec spec = new DownloadSpec(repo + '/' + commit);
 		action.execute(spec);
 		return createFrom(spec, String.format(DOWNLOAD_URL, repo, commit));
+	}
+
+	public Dependency alphaMcp(String version, String url) {
+		String filename = "mcp-" + version;
+		Path destination = globalCache.resolve("yarn-resolutions").resolve(filename + ".tiny.gz");
+		Path mcpFile = globalCache.resolve("yarn-resolutions").resolve(filename + ".zip");
+		createDirectory(destination.getParent());
+
+		logger.debug("Creating new MCP dependency for " + url);
+		class McpDep extends ComputedDependency {
+			private final String url;
+			private final Path mcpFile;
+			private final Path destination;
+
+			public McpDep(String group, String name, String version, String url, Path mcpFile, Path destination) {
+				super(group, name, version);
+				this.url = url;
+				this.mcpFile = mcpFile;
+				this.destination = destination;
+			}
+
+			@Override
+			protected FileCollection makeFiles() {
+				return fileFactory.apply(destination);
+			}
+
+			@Override
+			public Set<File> resolve() {
+				logger.info("Resolving alpha MCP dependency for " + url);
+				if (Files.notExists(destination.getParent())) throw new IllegalStateException("Dependency on " + url + " lacks a destination");
+
+				try {
+					DownloadUtil.downloadIfChanged(new URL(url), mcpFile.toFile(), logger, true);
+				} catch (MalformedURLException e) {
+					throw new IllegalArgumentException("Invalid origin URL: " + url, e);
+				} catch (IOException e) {
+					throw new RuntimeException("Unable to download " + url, e);
+				}
+
+				try {
+					AlphaMcpConverter.convert(mcJar, mcpFile, destination);
+				} catch (IOException e) {
+					throw new RuntimeException("Unable to convert from MCP", e);
+				}
+
+				return Collections.singleton(destination.toFile());
+			}
+
+			@Override
+			public boolean contentEquals(Dependency dependency) {
+				if (dependency == this) return true;
+				if (!(dependency instanceof McpDep)) return false;
+				McpDep that = (McpDep) dependency;
+				return Objects.equals(url, that.url);
+			}
+
+			@Override
+			public Dependency copy() {
+				return new McpDep(getGroup(), getName(), getVersion(), url, mcpFile, destination);
+			}
+		}
+		return new McpDep("de.oceanlabs", "mcp", version, url, mcpFile, destination);
 	}
 
 	public class GithubDependency extends ComputedDependency {
