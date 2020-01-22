@@ -100,7 +100,7 @@ public class AlphaMcpConverter {
             }
             new BufferedReader(new InputStreamReader(mcpZipFile.getInputStream(mcpZipFile.getEntry("conf/minecraft.rgs"))))
                     .lines()
-                    .filter(line -> line.startsWith(".class_map") || line.startsWith(".field_map") || line.startsWith("method_map"))
+                    .filter(line -> line.startsWith(".class_map") || line.startsWith(".field_map") || line.startsWith(".method_map"))
                     .map(line -> line.split(" "))
                     .forEach(line -> {
                         if (".class_map".equals(line[0])) {
