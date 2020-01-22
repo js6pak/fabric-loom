@@ -166,6 +166,13 @@ public class YarnGithubResolver {
 	}
 
 	public Dependency alphaMcp(String version, String url) {
+		return alphaMcp(version, url, NOOP);
+	}
+
+	public Dependency alphaMcp(String version, String url, Action<DownloadSpec> action) {
+		DownloadSpec spec = new DownloadSpec("de.oceanlabs/mcp");
+		action.execute(spec);
+
 		String filename = "mcp-" + version;
 		Path destination = globalCache.resolve("yarn-resolutions").resolve(filename + ".tiny.gz");
 		Path mcpFile = globalCache.resolve("yarn-resolutions").resolve(filename + ".zip");
@@ -191,6 +198,9 @@ public class YarnGithubResolver {
 
 			@Override
 			public Set<File> resolve() {
+				if (Files.exists(destination) && !spec.forceFresh)
+					return Collections.singleton(destination.toFile());
+
 				logger.info("Resolving alpha MCP dependency for " + url);
 				if (Files.notExists(destination.getParent())) throw new IllegalStateException("Dependency on " + url + " lacks a destination");
 
