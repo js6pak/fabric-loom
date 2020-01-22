@@ -43,6 +43,7 @@ import com.google.gson.JsonObject;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
+import org.gradle.api.plugins.JavaPluginConvention;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -58,6 +59,7 @@ public class RunConfig {
 	public String runDir;
 	public String vmArgs;
 	public String programArgs;
+	public String javaVersion;
 
 	public Element genRuns(Element doc) throws IOException, ParserConfigurationException, TransformerException {
 		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
@@ -69,6 +71,11 @@ public class RunConfig {
 
 		if (!Strings.isNullOrEmpty(vmArgs)) {
 			this.addXml(root, "option", ImmutableMap.of("name", "VM_PARAMETERS", "value", vmArgs));
+		}
+
+		if (!Strings.isNullOrEmpty(javaVersion)) {
+			this.addXml(root, "option", ImmutableMap.of("name", "ALTERNATIVE_JRE_PATH", "value", javaVersion));
+			this.addXml(root, "option", ImmutableMap.of("name", "ALTERNATIVE_JRE_PATH_ENABLED", "value", "true"));
 		}
 
 		if (!Strings.isNullOrEmpty(programArgs)) {
@@ -98,6 +105,7 @@ public class RunConfig {
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
 		runConfig.projectName = project.getName();
 		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
+		runConfig.javaVersion = project.getConvention().getPlugin(JavaPluginConvention.class).getTargetCompatibility().toString();
 
 		switch (extension.getLoaderLaunchMethod()) {
 		case "launchwrapper": {
