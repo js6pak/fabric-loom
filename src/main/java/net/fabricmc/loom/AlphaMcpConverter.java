@@ -84,6 +84,7 @@ public class AlphaMcpConverter {
                         .skip(3)
                         .map(line -> line.split(","))
                         .filter(line -> line.length > 6)
+                        .filter(line -> !"*".equals(line[6]))
                         .forEach(line -> fieldSrgToNamed.put(line[2], line[6]));
             }
             ZipEntry methodsCsv = mcpZipFile.getEntry("conf/methods.csv");
@@ -94,6 +95,7 @@ public class AlphaMcpConverter {
                         .skip(4)
                         .map(line -> line.split(","))
                         .filter(line -> line.length > 4)
+                        .filter(line -> !"*".equals(line[4]))
                         .forEach(line -> methodsSrgToNamed.put(line[1], line[4]));
             }
             new BufferedReader(new InputStreamReader(mcpZipFile.getInputStream(mcpZipFile.getEntry("conf/minecraft.rgs"))))
@@ -102,18 +104,26 @@ public class AlphaMcpConverter {
                     .map(line -> line.split(" "))
                     .forEach(line -> {
                         if (".class_map".equals(line[0])) {
-                            String className = line[2].contains("/") || line[2].contains(".") ? line[2] : "net/minecraft/src/" + line[2];
-                            mappings.put(line[1], new ClassMapping(line[1], className));
+                            if (validClass(line[1])) {
+                                String className = line[2].contains("/") ? line[2] : "net/minecraft/src/" + line[2];
+                                mappings.put(line[1], new ClassMapping(line[1], className));
+                            }
                         } else if (".field_map".equals(line[0])) {
-                            String key = line[1] + "/" + line[2];
+                            String key = line[1];
+                            String clazz = key.substring(0, key.lastIndexOf('/'));
+                            String name = key.substring(key.lastIndexOf('/') + 1);
                             String desc = fieldDescs.get(key);
-                            if (desc != null) {
-                                MemberMapping field = new MemberMapping(line[2], desc, line[3], fieldSrgToNamed.getOrDefault(line[3], line[3]));
-                                mappings.computeIfAbsent(line[1], k -> new ClassMapping(k, k)).fields.add(field);
+                            if (desc != null && validClass(clazz)) {
+                                MemberMapping field = new MemberMapping(name, desc, line[2], fieldSrgToNamed.getOrDefault(line[2], line[2]));
+                                mappings.computeIfAbsent(clazz, k -> new ClassMapping(k, k)).fields.add(field);
                             }
                         } else {
-                            MemberMapping method = new MemberMapping(line[2], line[3], line[4], methodsSrgToNamed.getOrDefault(line[4], line[4]));
-                            mappings.computeIfAbsent(line[1], k -> new ClassMapping(k, k)).methods.add(method);
+                            String clazz = line[1].substring(0, line[1].lastIndexOf('/'));
+                            String name = line[1].substring(line[1].lastIndexOf('/') + 1);
+                            if (validClass(clazz)) {
+                                MemberMapping method = new MemberMapping(name, line[2], line[3], methodsSrgToNamed.getOrDefault(line[3], line[3]));
+                                mappings.computeIfAbsent(clazz, k -> new ClassMapping(k, k)).methods.add(method);
+                            }
                         }
                     });
         }
@@ -131,6 +141,10 @@ public class AlphaMcpConverter {
             writer.flush();
         }
 
+    }
+
+    private static boolean validClass(String clazz) {
+        return !clazz.contains("/") || clazz.startsWith("net/minecraft/");
     }
 
 }
