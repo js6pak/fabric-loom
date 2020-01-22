@@ -243,7 +243,7 @@ public class YarnGithubResolver {
 		} catch (IOException e) {
 			throw new RuntimeException("Unable to read mediafire HTML", e);
 		}
-		Matcher matcher = Pattern.compile("<div (?:class=\"download_link\" )?id=\"download_link\".+?href=\"(https?://[^\"])\"", Pattern.DOTALL).matcher(rawHtml);
+		Matcher matcher = Pattern.compile("<div (?:class=\"download_link\" )?id=\"download_link\".+?href=\"(https?://[^\"]+)\"", Pattern.DOTALL).matcher(rawHtml);
 		if (!matcher.find()) {
 			throw new IllegalArgumentException("Unable to find download link for " + htmlLink);
 		}
