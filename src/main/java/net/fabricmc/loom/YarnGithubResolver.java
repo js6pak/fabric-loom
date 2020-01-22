@@ -12,12 +12,16 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import org.apache.commons.io.FileUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
@@ -217,6 +221,30 @@ public class YarnGithubResolver {
 			}
 		}
 		return new McpDep("de.oceanlabs", "mcp", version, url, mcpFile, destination);
+	}
+
+	public String mediafire(String htmlLink) {
+		Path dest = globalCache.resolve("mediafire-cache").resolve(htmlLink.replaceAll("[^\\w\\.]", "_"));
+		try {
+			DownloadUtil.downloadIfChanged(new URL(htmlLink), dest.toFile(), logger, true);
+		} catch (MalformedURLException e) {
+			throw new IllegalArgumentException("Invalid mediafire HTML link: " + htmlLink);
+		} catch (IOException e) {
+			throw new RuntimeException("Unable to download mediafire HTML", e);
+		}
+
+		String rawHtml;
+		try {
+			rawHtml = FileUtils.readFileToString(dest.toFile(), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new RuntimeException("Unable to read mediafire HTML", e);
+		}
+		rawHtml = rawHtml.substring(rawHtml.indexOf("<div id=\"download_link\""));
+		Matcher matcher = Pattern.compile("href=\"(https?://[^\"])\"").matcher(rawHtml);
+		if (!matcher.find()) {
+			throw new IllegalArgumentException("Unable to find download link for " + htmlLink);
+		}
+		return matcher.group(1);
 	}
 
 	public class GithubDependency extends ComputedDependency {
