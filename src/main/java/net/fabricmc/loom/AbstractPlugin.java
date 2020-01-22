@@ -165,7 +165,7 @@ public class AbstractPlugin implements Plugin<Project> {
 							"-AinMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_TINY.getCanonicalPath(),
 							"-AoutMapFileNamedIntermediary=" + extension.getMappingsProvider().MAPPINGS_MIXIN_EXPORT.getCanonicalPath(),
 							"-AoutRefMapFile=" + new File(javaCompileTask.getDestinationDir(), extension.getRefmapName()).getCanonicalPath(),
-							"-AdefaultObfuscationEnv=named:intermediary");
+							"-AdefaultObfuscationEnv=named:official");
 					} catch (IOException e) {
 						e.printStackTrace();
 					}

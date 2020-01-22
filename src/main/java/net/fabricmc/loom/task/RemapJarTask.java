@@ -55,6 +55,8 @@ public class RemapJarTask extends Jar {
 	private final RegularFileProperty input = GradleSupport.getFileProperty(getProject());
 	private boolean addNestedDependencies;
 	private boolean includeAT = true;
+	private String fromMappings = "named";
+	private String toMappings = "intermediary";
 
 	@TaskAction
 	public void doTask() throws Throwable {
@@ -74,8 +76,8 @@ public class RemapJarTask extends Jar {
 		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		MappingsProvider mappingsProvider = extension.getMappingsProvider();
 
-		String fromM = "named";
-		String toM = "intermediary";
+		String fromM = task instanceof RemapJarTask ? ((RemapJarTask) task).fromMappings : "named";
+		String toM = task instanceof RemapJarTask ? ((RemapJarTask) task).toMappings : "intermediary";
 
 		Set<File> classpathFiles = new LinkedHashSet<>(
 						project.getConfigurations().getByName("compileClasspath").getFiles()
@@ -154,5 +156,23 @@ public class RemapJarTask extends Jar {
 
 	public void setAddNestedDependencies(boolean value) {
 		addNestedDependencies = value;
+	}
+
+	@Input
+	public String getFromMappings() {
+		return fromMappings;
+	}
+
+	public void setFromMappings(String fromMappings) {
+		this.fromMappings = fromMappings;
+	}
+
+	@Input
+	public String getToMappings() {
+		return toMappings;
+	}
+
+	public void setToMappings(String toMappings) {
+		this.toMappings = toMappings;
 	}
 }
