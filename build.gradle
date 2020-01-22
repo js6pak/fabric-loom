@@ -92,6 +92,7 @@ task javadocJar(type: Jar, dependsOn: javadoc) {
 apply from: 'https://github.com/FabricMC/fabric-docs/raw/master/gradle/license.gradle'
 
 license {
+	exclude '**/loom/AlphaMcpConverter'
 	exclude '**/loom/YarnGithubResolver.java'
 	exclude '**/loom/util/DownloadUtil.java'
 	exclude '**/loom/task/RemappingJar.java'
