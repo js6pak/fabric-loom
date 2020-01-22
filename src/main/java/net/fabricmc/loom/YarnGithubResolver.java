@@ -170,7 +170,7 @@ public class YarnGithubResolver {
 	}
 
 	public Dependency alphaMcp(String version, String url, Action<DownloadSpec> action) {
-		DownloadSpec spec = new DownloadSpec("de.oceanlabs/mcp");
+		DownloadSpec spec = new DownloadSpec("de.oceanlabs/mcp/" + version);
 		action.execute(spec);
 
 		String filename = "mcp-" + version;
