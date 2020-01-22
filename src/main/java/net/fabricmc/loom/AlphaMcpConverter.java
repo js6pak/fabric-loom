@@ -8,6 +8,7 @@
 package net.fabricmc.loom;
 
 import net.fabricmc.loom.providers.mappings.TinyWriter;
+import net.fabricmc.mappings.EntryTriple;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -26,7 +27,7 @@ import java.util.zip.ZipFile;
 
 public class AlphaMcpConverter {
 
-    public static void convert(File mcJar, Path mcpZip, Path tinyFile) throws IOException {
+    public static void convert(File mcJar, Path mcpZip, Path tinyFile, YarnGithubResolver.MappingContainer extraMappings) throws IOException {
         Map<String, String> fieldDescs = new HashMap<>();
         try (JarFile mcJarFile = new JarFile(mcJar)) {
             Enumeration<JarEntry> entries = mcJarFile.entries();
@@ -106,7 +107,7 @@ public class AlphaMcpConverter {
                         if (".class_map".equals(line[0])) {
                             if (validClass(line[1])) {
                                 String className = line[2].contains("/") ? line[2] : "net/minecraft/src/" + line[2];
-                                mappings.put(line[1], new ClassMapping(line[1], className));
+                                mappings.put(line[1], new ClassMapping(line[1], extraMappings.getClasses().getOrDefault(className, className)));
                             }
                         } else if (".field_map".equals(line[0])) {
                             String key = line[1];
@@ -114,15 +115,19 @@ public class AlphaMcpConverter {
                             String name = key.substring(key.lastIndexOf('/') + 1);
                             String desc = fieldDescs.get(key);
                             if (desc != null && validClass(clazz)) {
-                                MemberMapping field = new MemberMapping(name, desc, line[2], fieldSrgToNamed.getOrDefault(line[2], line[2]));
-                                mappings.computeIfAbsent(clazz, k -> new ClassMapping(k, k)).fields.add(field);
+                                ClassMapping mapping = mappings.computeIfAbsent(clazz, k -> new ClassMapping(k, k));
+                                String mcp = extraMappings.getFields().getOrDefault(new EntryTriple(mapping.mcp, line[2], desc), fieldSrgToNamed.getOrDefault(line[2], line[2]));
+                                MemberMapping field = new MemberMapping(name, desc, line[2], mcp);
+                                mapping.fields.add(field);
                             }
                         } else {
                             String clazz = line[1].substring(0, line[1].lastIndexOf('/'));
                             String name = line[1].substring(line[1].lastIndexOf('/') + 1);
                             if (validClass(clazz)) {
-                                MemberMapping method = new MemberMapping(name, line[2], line[3], methodsSrgToNamed.getOrDefault(line[3], line[3]));
-                                mappings.computeIfAbsent(clazz, k -> new ClassMapping(k, k)).methods.add(method);
+                                ClassMapping mapping = mappings.computeIfAbsent(clazz, k -> new ClassMapping(k, k));
+                                String mcp = extraMappings.getMethods().getOrDefault(new EntryTriple(mapping.mcp, line[3], line[2]), methodsSrgToNamed.getOrDefault(line[3], line[3]));
+                                MemberMapping method = new MemberMapping(name, line[2], line[3], mcp);
+                                mapping.methods.add(method);
                             }
                         }
                     });

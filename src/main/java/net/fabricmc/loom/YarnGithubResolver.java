@@ -166,12 +166,20 @@ public class YarnGithubResolver {
 	}
 
 	public Dependency alphaMcp(String version, String url) {
-		return alphaMcp(version, url, NOOP);
+		return alphaMcp(version, url, false);
 	}
 
-	public Dependency alphaMcp(String version, String url, Action<DownloadSpec> action) {
-		DownloadSpec spec = new DownloadSpec("de.oceanlabs/mcp/" + version);
-		action.execute(spec);
+	public Dependency alphaMcp(String version, String url, Action<MappingContainer> containerAction) {
+		return alphaMcp(version, url, false, containerAction);
+	}
+
+	public Dependency alphaMcp(String version, String url, boolean force) {
+		return alphaMcp(version, url, force, mappings -> {});
+	}
+
+	public Dependency alphaMcp(String version, String url, boolean force, Action<MappingContainer> containerAction) {
+		MappingContainer mappings = new MappingContainer(version);
+		containerAction.execute(mappings);
 
 		String filename = "mcp-" + version;
 		Path destination = globalCache.resolve("yarn-resolutions").resolve(filename + ".tiny.gz");
@@ -198,7 +206,7 @@ public class YarnGithubResolver {
 
 			@Override
 			public Set<File> resolve() {
-				if (Files.exists(destination) && !spec.forceFresh)
+				if (Files.exists(destination) && !force)
 					return Collections.singleton(destination.toFile());
 
 				logger.info("Resolving alpha MCP dependency for " + url);
@@ -213,7 +221,7 @@ public class YarnGithubResolver {
 				}
 
 				try {
-					AlphaMcpConverter.convert(mcJar.get(), mcpFile, destination);
+					AlphaMcpConverter.convert(mcJar.get(), mcpFile, destination, mappings);
 				} catch (IOException e) {
 					throw new RuntimeException("Unable to convert from MCP", e);
 				}
