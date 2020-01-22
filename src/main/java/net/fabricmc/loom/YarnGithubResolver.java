@@ -8,6 +8,7 @@
 package net.fabricmc.loom;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.MalformedURLException;
@@ -21,8 +22,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.zip.GZIPInputStream;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
 import org.gradle.api.artifacts.Dependency;
@@ -236,12 +239,11 @@ public class YarnGithubResolver {
 
 		String rawHtml;
 		try {
-			rawHtml = FileUtils.readFileToString(dest.toFile(), StandardCharsets.UTF_8);
+			rawHtml = IOUtils.toString(new GZIPInputStream(new FileInputStream(dest.toFile())), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new RuntimeException("Unable to read mediafire HTML", e);
 		}
-		rawHtml = rawHtml.substring(rawHtml.indexOf("<div id=\"download_link\""));
-		Matcher matcher = Pattern.compile("href=\"(https?://[^\"])\"").matcher(rawHtml);
+		Matcher matcher = Pattern.compile("<div (?:class=\"download_link\" )?id=\"download_link\".+?href=\"(https?://[^\"])\"").matcher(rawHtml);
 		if (!matcher.find()) {
 			throw new IllegalArgumentException("Unable to find download link for " + htmlLink);
 		}
