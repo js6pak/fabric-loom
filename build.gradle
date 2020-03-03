@@ -49,6 +49,7 @@ dependencies {
 	implementation ('org.zeroturnaround:zt-zip:1.13')
 	implementation ('com.google.code.gson:gson:2.8.5')
 	implementation ('com.google.guava:guava:28.0-jre')
+	implementation ('org.csveed:csveed:0.6.0')
 
 	// game handling utils
 	implementation ('net.fabricmc:stitch:0.4.1.68') {
@@ -69,7 +70,6 @@ dependencies {
 
 	// source code remapping
 	implementation ('org.cadixdev:mercury:0.1.0.fabric-SNAPSHOT')
-
 }
 
 jar {

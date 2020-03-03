@@ -24,7 +24,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import org.apache.commons.io.FileUtils;
+import net.fabricmc.loom.mcp.AlphaMcpConverter;
+import net.fabricmc.loom.mcp.McpConverter;
+import net.fabricmc.loom.mcp.beta.BetaMcpConverter;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Action;
 import org.gradle.api.Project;
@@ -165,19 +167,22 @@ public class YarnGithubResolver {
 		return createFrom(spec, String.format(DOWNLOAD_URL, repo, commit));
 	}
 
-	public Dependency alphaMcp(String version, String url) {
-		return alphaMcp(version, url, false);
+	public BetaMcpConverter BETA = new BetaMcpConverter();
+	public AlphaMcpConverter ALPHA = new AlphaMcpConverter();
+
+	public Dependency mcp(McpConverter mcpConverter, String version, String url) {
+		return mcp(mcpConverter, version, url, false);
 	}
 
-	public Dependency alphaMcp(String version, String url, Action<MappingContainer> containerAction) {
-		return alphaMcp(version, url, false, containerAction);
+	public Dependency mcp(McpConverter mcpConverter, String version, String url, Action<MappingContainer> containerAction) {
+		return mcp(mcpConverter, version, url, false, containerAction);
 	}
 
-	public Dependency alphaMcp(String version, String url, boolean force) {
-		return alphaMcp(version, url, force, mappings -> {});
+	public Dependency mcp(McpConverter mcpConverter, String version, String url, boolean force) {
+		return mcp(mcpConverter, version, url, force, mappings -> {});
 	}
 
-	public Dependency alphaMcp(String version, String url, boolean force, Action<MappingContainer> containerAction) {
+	public Dependency mcp(McpConverter mcpConverter, String version, String url, boolean force, Action<MappingContainer> containerAction) {
 		MappingContainer mappings = new MappingContainer(version);
 		containerAction.execute(mappings);
 
@@ -221,7 +226,7 @@ public class YarnGithubResolver {
 				}
 
 				try {
-					AlphaMcpConverter.convert(mcJar.get(), mcpFile, destination, mappings);
+					mcpConverter.convert(mcJar.get(), mcpFile, destination, mappings);
 				} catch (IOException e) {
 					throw new RuntimeException("Unable to convert from MCP", e);
 				}

@@ -1,12 +1,6 @@
-/*
- * Copyright 2020 Joseph Burton
- *
- * This Source Code Form is subject to the terms of the Mozilla Public
- * License, v. 2.0. If a copy of the MPL was not distributed with this
- * file, You can obtain one at http://mozilla.org/MPL/2.0/.
- */
-package net.fabricmc.loom;
+package net.fabricmc.loom.mcp;
 
+import net.fabricmc.loom.YarnGithubResolver;
 import net.fabricmc.loom.providers.mappings.TinyWriter;
 import net.fabricmc.mappings.EntryTriple;
 import org.objectweb.asm.ClassReader;
@@ -25,9 +19,9 @@ import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class AlphaMcpConverter {
+public class AlphaMcpConverter implements McpConverter {
 
-    public static void convert(File mcJar, Path mcpZip, Path tinyFile, YarnGithubResolver.MappingContainer extraMappings) throws IOException {
+    public void convert(File mcJar, Path mcpZip, Path tinyFile, YarnGithubResolver.MappingContainer extraMappings) throws IOException {
         Map<String, String> fieldDescs = new HashMap<>();
         try (JarFile mcJarFile = new JarFile(mcJar)) {
             Enumeration<JarEntry> entries = mcJarFile.entries();
