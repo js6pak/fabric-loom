@@ -20,12 +20,10 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -67,19 +65,27 @@ public class BetaMcpConverter implements McpConverter {
             }
         }
 
-        // TODO fix fields
-        Map<String, String> fieldDescs = new HashMap<>();
+//        Map<String, String> fieldDescs = new HashMap<>();
         try (JarFile mcJarFile = new JarFile(mcJar)) {
             Enumeration<JarEntry> entries = mcJarFile.entries();
             while (entries.hasMoreElements()) {
                 JarEntry entry = entries.nextElement();
                 if (entry.getName().endsWith(".class")) {
-                    String className = entry.getName().substring(0, entry.getName().length() - 6);
+                    String[] split = entry.getName().split("/");
+                    String packageName = Arrays.stream(split).skip(split.length - 1).collect(Collectors.joining("/")).replace(".class", "");
                     ClassReader reader = new ClassReader(mcJarFile.getInputStream(entry));
                     reader.accept(new ClassVisitor(Opcodes.ASM7) {
                         @Override
                         public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-                            fieldDescs.put(className + "/" + name, descriptor);
+                            McpClass mapping = mappings.getOrDefault(packageName, null);
+                            if (mapping != null) {
+                                McpMember field = mapping.getFields().stream().filter(x -> x.getNotch().equals(name)).findFirst().orElse(null);
+                                if (field == null) {
+                                    System.out.println("Couldn't find field " + name + " " + descriptor + " in class " + packageName);
+                                } else {
+                                    field.setNotchsig(descriptor);
+                                }
+                            }
                             return super.visitField(access, name, descriptor, signature, value);
                         }
                     }, ClassReader.SKIP_CODE);
@@ -94,7 +100,7 @@ public class BetaMcpConverter implements McpConverter {
                 writer.acceptClass($class.getNotch(), className, className);
 
                 for (McpMember field : $class.getFields()) {
-                    writer.acceptField(field.getPackageName() + "/" + $class.getNotch(), fieldDescs.getOrDefault($class.getNotch() + "/" + field.getNotch(), field.getNotchsig()), field.getNotch(), field.getSearge(), field.getName());
+                    writer.acceptField(field.getPackageName().equals("net/minecraft/src") ? $class.getNotch() : (field.getPackageName() + "/" + $class.getNotch()), field.getNotchsig(), field.getNotch(), field.getSearge(), field.getName());
                 }
                 for (McpMember method : $class.getMethods()) {
                     writer.acceptMethod($class.getNotch(), method.getNotchsig(), method.getNotch(), method.getSearge(), method.getName());
