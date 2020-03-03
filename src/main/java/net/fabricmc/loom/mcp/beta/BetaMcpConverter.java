@@ -11,14 +11,21 @@ import net.fabricmc.loom.YarnGithubResolver;
 import net.fabricmc.loom.mcp.McpConverter;
 import net.fabricmc.loom.providers.mappings.TinyWriter;
 import org.csveed.api.CsvClientImpl;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.ClassVisitor;
+import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Opcodes;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Path;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -60,6 +67,26 @@ public class BetaMcpConverter implements McpConverter {
             }
         }
 
+        // TODO fix fields
+        Map<String, String> fieldDescs = new HashMap<>();
+        try (JarFile mcJarFile = new JarFile(mcJar)) {
+            Enumeration<JarEntry> entries = mcJarFile.entries();
+            while (entries.hasMoreElements()) {
+                JarEntry entry = entries.nextElement();
+                if (entry.getName().endsWith(".class")) {
+                    String className = entry.getName().substring(0, entry.getName().length() - 6);
+                    ClassReader reader = new ClassReader(mcJarFile.getInputStream(entry));
+                    reader.accept(new ClassVisitor(Opcodes.ASM7) {
+                        @Override
+                        public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
+                            fieldDescs.put(className + "/" + name, descriptor);
+                            return super.visitField(access, name, descriptor, signature, value);
+                        }
+                    }, ClassReader.SKIP_CODE);
+                }
+            }
+        }
+
         try (TinyWriter writer = new TinyWriter(tinyFile, true, "official", "intermediary", "named")) {
             for (McpClass $class : mappings.values()) {
                 String className = $class.getName().contains("/") ? $class.getName() : $class.getPackageName() + "/" + $class.getName();
@@ -67,7 +94,7 @@ public class BetaMcpConverter implements McpConverter {
                 writer.acceptClass($class.getNotch(), className, className);
 
                 for (McpMember field : $class.getFields()) {
-                    writer.acceptField($class.getNotch(), field.getNotchsig(), field.getNotch(), field.getSearge(), field.getName());
+                    writer.acceptField(field.getPackageName() + "/" + $class.getNotch(), fieldDescs.getOrDefault($class.getNotch() + "/" + field.getNotch(), field.getNotchsig()), field.getNotch(), field.getSearge(), field.getName());
                 }
                 for (McpMember method : $class.getMethods()) {
                     writer.acceptMethod($class.getNotch(), method.getNotchsig(), method.getNotch(), method.getSearge(), method.getName());
