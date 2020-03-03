@@ -67,10 +67,10 @@ public class BetaMcpConverter implements McpConverter {
                 writer.acceptClass($class.getNotch(), className, className);
 
                 for (McpMember field : $class.getFields()) {
-                    writer.acceptField($class.getNotch(), field.getSig(), field.getNotch(), field.getSearge(), field.getName());
+                    writer.acceptField($class.getNotch(), field.getNotchsig(), field.getNotch(), field.getSearge(), field.getName());
                 }
                 for (McpMember method : $class.getMethods()) {
-                    writer.acceptMethod($class.getNotch(), method.getSig(), method.getNotch(), method.getSearge(), method.getName());
+                    writer.acceptMethod($class.getNotch(), method.getNotchsig(), method.getNotch(), method.getSearge(), method.getName());
                 }
             }
             writer.flush();
