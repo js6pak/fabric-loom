@@ -65,7 +65,6 @@ public class BetaMcpConverter implements McpConverter {
             }
         }
 
-//        Map<String, String> fieldDescs = new HashMap<>();
         try (JarFile mcJarFile = new JarFile(mcJar)) {
             Enumeration<JarEntry> entries = mcJarFile.entries();
             while (entries.hasMoreElements()) {
@@ -100,10 +99,10 @@ public class BetaMcpConverter implements McpConverter {
                 writer.acceptClass($class.getNotch(), className, className);
 
                 for (McpMember field : $class.getFields()) {
-                    writer.acceptField(field.getPackageName().equals("net/minecraft/src") ? $class.getNotch() : (field.getPackageName() + "/" + $class.getNotch()), field.getNotchsig(), field.getNotch(), field.getSearge(), field.getName());
+                    writer.acceptField($class.getFullNotch(), field.getNotchsig(), field.getNotch(), field.getSearge(), field.getName());
                 }
                 for (McpMember method : $class.getMethods()) {
-                    writer.acceptMethod($class.getNotch(), method.getNotchsig(), method.getNotch(), method.getSearge(), method.getName());
+                    writer.acceptMethod($class.getFullNotch(), method.getNotchsig(), method.getNotch(), method.getSearge(), method.getName());
                 }
             }
             writer.flush();

@@ -43,6 +43,10 @@ public class McpClass {
         return notch;
     }
 
+    public String getFullNotch() {
+        return getPackageName().equals("net/minecraft/src") ? getNotch() : (getPackageName() + "/" + getNotch());
+    }
+
     public void setNotch(String notch) {
         this.notch = notch;
     }
