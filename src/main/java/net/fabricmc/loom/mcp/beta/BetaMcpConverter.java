@@ -96,7 +96,7 @@ public class BetaMcpConverter implements McpConverter {
             for (McpClass $class : mappings.values()) {
                 String className = $class.getName().contains("/") ? $class.getName() : $class.getPackageName() + "/" + $class.getName();
                 className = extraMappings.getClasses().getOrDefault(className, className);
-                writer.acceptClass($class.getNotch(), className, className);
+                writer.acceptClass($class.getFullNotch(), className, className);
 
                 for (McpMember field : $class.getFields()) {
                     writer.acceptField($class.getFullNotch(), field.getNotchsig(), field.getNotch(), field.getSearge(), field.getName());
