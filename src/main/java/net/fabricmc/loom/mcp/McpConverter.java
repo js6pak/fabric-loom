@@ -14,5 +14,5 @@ import java.io.IOException;
 import java.nio.file.Path;
 
 public interface McpConverter {
-    void convert(File mcJar, Path mcpZip, Path tinyFile, YarnGithubResolver.MappingContainer extraMappings) throws IOException;
+    void convert(File mcJar, Path mcpZip, Path tinyFile, McpMappingContainer extraMappings) throws IOException;
 }

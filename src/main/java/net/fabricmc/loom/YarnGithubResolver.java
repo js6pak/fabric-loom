@@ -26,6 +26,7 @@ import java.util.zip.GZIPInputStream;
 
 import net.fabricmc.loom.mcp.AlphaMcpConverter;
 import net.fabricmc.loom.mcp.McpConverter;
+import net.fabricmc.loom.mcp.McpMappingContainer;
 import net.fabricmc.loom.mcp.beta.BetaMcpConverter;
 import org.apache.commons.io.IOUtils;
 import org.gradle.api.Action;
@@ -174,7 +175,7 @@ public class YarnGithubResolver {
 		return mcp(mcpConverter, version, url, false);
 	}
 
-	public Dependency mcp(McpConverter mcpConverter, String version, String url, Action<MappingContainer> containerAction) {
+	public Dependency mcp(McpConverter mcpConverter, String version, String url, Action<McpMappingContainer> containerAction) {
 		return mcp(mcpConverter, version, url, false, containerAction);
 	}
 
@@ -182,8 +183,8 @@ public class YarnGithubResolver {
 		return mcp(mcpConverter, version, url, force, mappings -> {});
 	}
 
-	public Dependency mcp(McpConverter mcpConverter, String version, String url, boolean force, Action<MappingContainer> containerAction) {
-		MappingContainer mappings = new MappingContainer(version);
+	public Dependency mcp(McpConverter mcpConverter, String version, String url, boolean force, Action<McpMappingContainer> containerAction) {
+		McpMappingContainer mappings = new McpMappingContainer(version);
 		containerAction.execute(mappings);
 
 		String filename = "mcp-" + version;

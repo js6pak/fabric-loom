@@ -1,6 +1,5 @@
 package net.fabricmc.loom.mcp;
 
-import net.fabricmc.loom.YarnGithubResolver;
 import net.fabricmc.loom.providers.mappings.TinyWriter;
 import net.fabricmc.mappings.EntryTriple;
 import org.objectweb.asm.ClassReader;
@@ -21,7 +20,7 @@ import java.util.zip.ZipFile;
 
 public class AlphaMcpConverter implements McpConverter {
 
-    public void convert(File mcJar, Path mcpZip, Path tinyFile, YarnGithubResolver.MappingContainer extraMappings) throws IOException {
+    public void convert(File mcJar, Path mcpZip, Path tinyFile, McpMappingContainer extraMappings) throws IOException {
         Map<String, String> fieldDescs = new HashMap<>();
         try (JarFile mcJarFile = new JarFile(mcJar)) {
             Enumeration<JarEntry> entries = mcJarFile.entries();
@@ -71,7 +70,7 @@ public class AlphaMcpConverter implements McpConverter {
 
 
         try (ZipFile mcpZipFile = new ZipFile(mcpZip.toFile())) {
-            ZipEntry fieldsCsv = mcpZipFile.getEntry("conf/fields.csv");
+            ZipEntry fieldsCsv = mcpZipFile.getEntry(extraMappings.getConf() + "/fields.csv");
             Map<String, String> fieldSrgToNamed = new HashMap<>();
             if (fieldsCsv != null) {
                 new BufferedReader(new InputStreamReader(mcpZipFile.getInputStream(fieldsCsv)))
@@ -82,7 +81,7 @@ public class AlphaMcpConverter implements McpConverter {
                         .filter(line -> !"*".equals(line[6]))
                         .forEach(line -> fieldSrgToNamed.put(line[2], line[6]));
             }
-            ZipEntry methodsCsv = mcpZipFile.getEntry("conf/methods.csv");
+            ZipEntry methodsCsv = mcpZipFile.getEntry(extraMappings.getConf() + "/methods.csv");
             Map<String, String> methodsSrgToNamed = new HashMap<>();
             if (methodsCsv != null) {
                 new BufferedReader(new InputStreamReader(mcpZipFile.getInputStream(methodsCsv)))
@@ -93,7 +92,7 @@ public class AlphaMcpConverter implements McpConverter {
                         .filter(line -> !"*".equals(line[4]))
                         .forEach(line -> methodsSrgToNamed.put(line[1], line[4]));
             }
-            new BufferedReader(new InputStreamReader(mcpZipFile.getInputStream(mcpZipFile.getEntry("conf/minecraft.rgs"))))
+            new BufferedReader(new InputStreamReader(mcpZipFile.getInputStream(mcpZipFile.getEntry(extraMappings.getConf() + "/minecraft.rgs"))))
                     .lines()
                     .filter(line -> line.startsWith(".class_map") || line.startsWith(".field_map") || line.startsWith(".method_map"))
                     .map(line -> line.split(" "))

@@ -7,8 +7,8 @@
  */
 package net.fabricmc.loom.mcp.beta;
 
-import net.fabricmc.loom.YarnGithubResolver;
 import net.fabricmc.loom.mcp.McpConverter;
+import net.fabricmc.loom.mcp.McpMappingContainer;
 import net.fabricmc.loom.providers.mappings.TinyWriter;
 import org.csveed.api.CsvClientImpl;
 import org.objectweb.asm.ClassReader;
@@ -28,11 +28,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class BetaMcpConverter implements McpConverter {
-    public void convert(File mcJar, Path mcpZip, Path tinyFile, YarnGithubResolver.MappingContainer extraMappings) throws IOException {
+    public void convert(File mcJar, Path mcpZip, Path tinyFile, McpMappingContainer extraMappings) throws IOException {
         Map<String, McpClass> mappings = new HashMap<>();
 
         try (ZipFile mcpZipFile = new ZipFile(mcpZip.toFile())) {
-            ZipEntry classesCsv = mcpZipFile.getEntry("conf/classes.csv");
+            ZipEntry classesCsv = mcpZipFile.getEntry(extraMappings.getConf() + "/classes.csv");
             List<McpClass> classes = new CsvClientImpl<>(new InputStreamReader(mcpZipFile.getInputStream(classesCsv)), McpClass.class).readBeans();
 
             for (McpClass $class : classes) {
@@ -42,7 +42,7 @@ public class BetaMcpConverter implements McpConverter {
                 mappings.put($class.getNotch(), $class);
             }
 
-            ZipEntry fieldsCsv = mcpZipFile.getEntry("conf/fields.csv");
+            ZipEntry fieldsCsv = mcpZipFile.getEntry(extraMappings.getConf() + "/fields.csv");
             List<McpMember> fields = new CsvClientImpl<>(new InputStreamReader(mcpZipFile.getInputStream(fieldsCsv)), McpMember.class).readBeans();
 
             for (McpMember field : fields) {
@@ -53,7 +53,7 @@ public class BetaMcpConverter implements McpConverter {
                 mapping.getFields().add(field);
             }
 
-            ZipEntry methodsCsv = mcpZipFile.getEntry("conf/methods.csv");
+            ZipEntry methodsCsv = mcpZipFile.getEntry(extraMappings.getConf() + "/methods.csv");
             List<McpMember> methods = new CsvClientImpl<>(new InputStreamReader(mcpZipFile.getInputStream(methodsCsv)), McpMember.class).readBeans();
 
             for (McpMember method : methods) {
