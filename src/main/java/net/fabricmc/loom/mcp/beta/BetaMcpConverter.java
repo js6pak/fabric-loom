@@ -36,7 +36,7 @@ public class BetaMcpConverter implements McpConverter {
             List<McpClass> classes = new CsvClientImpl<>(new InputStreamReader(mcpZipFile.getInputStream(classesCsv)), McpClass.class).readBeans();
 
             for (McpClass $class : classes) {
-                if ($class.getSide() != 0)
+                if ($class.getSide() != extraMappings.getSide())
                     continue;
 
                 mappings.put($class.getNotch(), $class);
@@ -46,7 +46,7 @@ public class BetaMcpConverter implements McpConverter {
             List<McpMember> fields = new CsvClientImpl<>(new InputStreamReader(mcpZipFile.getInputStream(fieldsCsv)), McpMember.class).readBeans();
 
             for (McpMember field : fields) {
-                if (field.getSide() != 0)
+                if (field.getSide() != extraMappings.getSide())
                     continue;
 
                 McpClass mapping = mappings.get(field.getClassnotch());
@@ -57,7 +57,7 @@ public class BetaMcpConverter implements McpConverter {
             List<McpMember> methods = new CsvClientImpl<>(new InputStreamReader(mcpZipFile.getInputStream(methodsCsv)), McpMember.class).readBeans();
 
             for (McpMember method : methods) {
-                if (method.getSide() != 0)
+                if (method.getSide() != extraMappings.getSide())
                     continue;
 
                 McpClass mapping = mappings.get(method.getClassnotch());

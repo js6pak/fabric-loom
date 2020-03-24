@@ -37,6 +37,7 @@ import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import net.fabricmc.loom.util.SetupIntelijRunConfigs;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -53,7 +54,9 @@ public class GenIdeaProjectTask extends AbstractLoomTask {
 	public void genIdeaRuns() throws IOException, ParserConfigurationException, SAXException, TransformerException {
 		Project project = this.getProject();
 
-		//Only generate the idea runs on the root project
+        SetupIntelijRunConfigs.setup(project);
+
+        //Only generate the idea runs on the root project
 		if (!AbstractPlugin.isRootProject(project)) {
 			return;
 		}

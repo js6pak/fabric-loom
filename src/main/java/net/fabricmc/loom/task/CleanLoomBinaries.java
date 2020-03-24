@@ -35,7 +35,7 @@ public class CleanLoomBinaries extends AbstractLoomTask {
 	@TaskAction
 	public void run() {
 		LoomGradleExtension extension = getExtension();
-		extension.getMinecraftProvider().getMergedJar().delete();
+		extension.getMinecraftProvider().getJar().delete();
 		extension.getMinecraftMappedProvider().getIntermediaryJar().delete();
 		extension.getMinecraftMappedProvider().getMappedJar().delete();
 

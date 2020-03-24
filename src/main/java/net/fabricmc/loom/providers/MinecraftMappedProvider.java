@@ -62,7 +62,7 @@ public class MinecraftMappedProvider extends LogicalDependencyProvider {
             throw new RuntimeException("mappings file not found");
         }
 
-        if (!minecraftProvider.getMergedJar().exists()) {
+        if (!minecraftProvider.getJar().exists()) {
             throw new RuntimeException("input merged jar not found");
         }
 

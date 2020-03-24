@@ -57,6 +57,7 @@ public class MinecraftProvider extends PhysicalDependencyProvider {
 	private final Gson gson = new Gson();
 	public String minecraftVersion;
 	public MinecraftVersionInfo versionInfo;
+	public String side;
 
 	private File MINECRAFT_JSON;
 	private File MINECRAFT_CLIENT_JAR;
@@ -72,6 +73,7 @@ public class MinecraftProvider extends PhysicalDependencyProvider {
 
 	@Override
 	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {
+		this.side = extension.side;
 		minecraftVersion = dependency.getDependency().getVersion();
 		boolean offline = project.getGradle().getStartParameter().isOffline();
 
@@ -103,7 +105,7 @@ public class MinecraftProvider extends PhysicalDependencyProvider {
 			AbstractPlugin.addMavenRepo(project, "Jitpack", "https://jitpack.io/"); //Needed to fetch OptiSine from
 		}
 
-		if (!MINECRAFT_MERGED_JAR.exists()) {
+		if (extension.side.equals("both") && !MINECRAFT_MERGED_JAR.exists()) {
 			try {
 				mergeJars(project.getLogger());
 			} catch (ZipError e) {
@@ -170,7 +172,7 @@ public class MinecraftProvider extends PhysicalDependencyProvider {
 					throw new GradleException("Minecraft " + minecraftVersion + " manifest not found at " + MINECRAFT_JSON.getAbsolutePath());
 				}
 			} else {
-				if (StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_JSON.toPath())) {
+				if (StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_JSON.toPath()) || extension.customManifest != null) {
 					project.getLogger().debug("Downloading Minecraft {} manifest", minecraftVersion);
 					DownloadUtil.downloadIfChanged(new URL(optionalVersion.get().url), MINECRAFT_JSON, project.getLogger());
 				}
@@ -181,14 +183,14 @@ public class MinecraftProvider extends PhysicalDependencyProvider {
 	}
 
 	private void downloadJars(Logger logger) throws IOException {
-		if (!MINECRAFT_CLIENT_JAR.exists() || !Checksum.equals(MINECRAFT_CLIENT_JAR, versionInfo.downloads.get("client").sha1) && StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_CLIENT_JAR.toPath())) {
-			logger.debug("Downloading Minecraft {} client jar", minecraftVersion);
-			DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("client").url), MINECRAFT_CLIENT_JAR, logger);
+		if (versionInfo.downloads.containsKey("client")) {
+			if (!MINECRAFT_CLIENT_JAR.exists() || !Checksum.equals(MINECRAFT_CLIENT_JAR, versionInfo.downloads.get("client").sha1) && StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_CLIENT_JAR.toPath())) {
+				logger.debug("Downloading Minecraft {} client jar", minecraftVersion);
+				DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("client").url), MINECRAFT_CLIENT_JAR, logger);
+			}
 		}
 
-		if (!versionInfo.downloads.containsKey("server")) {
-			Files.copy(MINECRAFT_CLIENT_JAR, MINECRAFT_SERVER_JAR);
-		} else {
+		if (versionInfo.downloads.containsKey("server")) {
 			if (!MINECRAFT_SERVER_JAR.exists() || !Checksum.equals(MINECRAFT_SERVER_JAR, versionInfo.downloads.get("server").sha1) && StaticPathWatcher.INSTANCE.hasFileChanged(MINECRAFT_SERVER_JAR.toPath())) {
 				logger.debug("Downloading Minecraft {} server jar", minecraftVersion);
 				DownloadUtil.downloadIfChanged(new URL(versionInfo.downloads.get("server").url), MINECRAFT_SERVER_JAR, logger);
@@ -205,8 +207,21 @@ public class MinecraftProvider extends PhysicalDependencyProvider {
 		}
 	}
 
-	public File getMergedJar() {
-		return MINECRAFT_MERGED_JAR;
+	@Deprecated
+	public File getMappedJar() {
+		return getJar();
+	}
+
+	public File getJar() {
+		switch (side) {
+			case "both":
+				return MINECRAFT_MERGED_JAR;
+			case "client":
+				return MINECRAFT_CLIENT_JAR;
+			case "server":
+				return MINECRAFT_SERVER_JAR;
+		}
+		return null;
 	}
 
 	public MinecraftLibraryProvider getLibraryProvider() {

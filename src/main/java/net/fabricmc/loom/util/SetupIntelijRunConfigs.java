@@ -24,67 +24,68 @@
 
 package net.fabricmc.loom.util;
 
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.providers.MinecraftAssetsProvider;
+import net.fabricmc.loom.providers.MinecraftNativesProvider;
+import org.apache.commons.io.FileUtils;
+import org.gradle.api.Project;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.apache.commons.io.FileUtils;
-import org.gradle.api.Project;
-
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.providers.MinecraftAssetsProvider;
-import net.fabricmc.loom.providers.MinecraftNativesProvider;
-
 public class SetupIntelijRunConfigs {
-	public static void setup(Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+    public static void setup(Project project) {
+        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		File projectDir = project.file(".idea");
+        File projectDir = project.getRootProject().file(".idea");
 
-		if (!projectDir.exists()) {
-			return;
-		}
+        if (!projectDir.exists()) {
+            return;
+        }
 
-		try {
-			generate(project);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to generate run configs", e);
-		}
+        try {
+            generate(project);
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to generate run configs", e);
+        }
 
-		File runDir = new File(project.getRootDir(), extension.runDir);
+        File runDir = new File(project.getRootDir(), extension.runDir);
 
-		if (!runDir.exists()) {
-			runDir.mkdirs();
-		}
-	}
+        if (!runDir.exists()) {
+            runDir.mkdirs();
+        }
+    }
 
-	private static void generate(Project project) throws IOException {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+    private static void generate(Project project) throws IOException {
+        LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
 
-		if (extension.ideSync()) {
-			//Ensures the assets are downloaded when idea is syncing a project
-			MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
-			MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
-		}
+        if (extension.ideSync()) {
+            //Ensures the assets are downloaded when idea is syncing a project
+            MinecraftAssetsProvider.provide(extension.getMinecraftProvider(), project);
+            MinecraftNativesProvider.provide(extension.getMinecraftProvider(), project);
+        }
 
-		File projectDir = project.file(".idea");
-		File runConfigsDir = new File(projectDir, "runConfigurations");
-		File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client.xml");
-		File serverRunConfigs = new File(runConfigsDir, "Minecraft_Server.xml");
+        File projectDir = project.getRootProject().file(".idea");
+        File runConfigsDir = new File(projectDir, "runConfigurations");
+        if (!runConfigsDir.exists()) {
+            runConfigsDir.mkdirs();
+        }
 
-		if (!runConfigsDir.exists()) {
-			runConfigsDir.mkdirs();
-		}
-
-		String clientRunConfig = RunConfig.clientRunConfig(project).fromDummy("idea_run_config_template.xml");
-		String serverRunConfig = RunConfig.serverRunConfig(project).fromDummy("idea_run_config_template.xml");
-
-		if (!clientRunConfigs.exists() || RunConfig.needsUpgrade(clientRunConfigs)) {
-			FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
-		}
-
-		if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
-			FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
-		}
-	}
+        String side = extension.getMinecraftProvider().side;
+        if (side.equals("both") || side.equals("client")) {
+            File clientRunConfigs = new File(runConfigsDir, "Minecraft_Client.xml");
+            String clientRunConfig = RunConfig.clientRunConfig(project).fromDummy("idea_run_config_template.xml");
+            if (!clientRunConfigs.exists() || RunConfig.needsUpgrade(clientRunConfigs)) {
+                FileUtils.writeStringToFile(clientRunConfigs, clientRunConfig, StandardCharsets.UTF_8);
+            }
+        }
+        if (side.equals("both") || side.equals("server")) {
+            File serverRunConfigs = new File(runConfigsDir, "Minecraft_Server.xml");
+            String serverRunConfig = RunConfig.serverRunConfig(project).fromDummy("idea_run_config_template.xml");
+            if (!serverRunConfigs.exists() || RunConfig.needsUpgrade(serverRunConfigs)) {
+                FileUtils.writeStringToFile(serverRunConfigs, serverRunConfig, StandardCharsets.UTF_8);
+            }
+        }
+    }
 }

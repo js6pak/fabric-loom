@@ -40,6 +40,7 @@ import java.util.Set;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
+import net.fabricmc.tinyremapper.NonClassCopyMode;
 import org.gradle.api.InvalidUserDataException;
 import org.gradle.api.Project;
 import org.zeroturnaround.zip.ZipUtil;
@@ -67,7 +68,7 @@ public class MapJarsTiny {
 
 		Path[] classpath = mapProvider.getMapperPaths().stream().map(File::toPath).toArray(Path[]::new);
 
-		Path input = jarProvider.getMergedJar().toPath();
+		Path input = jarProvider.getJar().toPath();
 		Path outputMapped = mapProvider.getMappedJar().toPath();
 		Path outputIntermediary = mapProvider.getIntermediaryJar().toPath();
 
@@ -84,7 +85,7 @@ public class MapJarsTiny {
 					.build();
 
 			try (OutputConsumerPath outputConsumer = new OutputConsumerPath(output)) {
-				outputConsumer.addNonClassFiles(input);
+				outputConsumer.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, null);
 				remapper.readClassPath(classpath);
 				remapper.readInputs(input);
 				remapper.apply(outputConsumer);

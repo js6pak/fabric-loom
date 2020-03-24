@@ -40,6 +40,7 @@ import com.google.common.base.Predicates;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import net.fabricmc.tinyremapper.NonClassCopyMode;
 import org.apache.commons.io.IOUtils;
 
 import org.gradle.api.Project;
@@ -182,7 +183,7 @@ public class ModProcessor {
 						.build();
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(Paths.get(output.getAbsolutePath()))) {
-			outputConsumer.addNonClassFiles(inputPath);
+			outputConsumer.addNonClassFiles(inputPath, NonClassCopyMode.FIX_META_INF, null);
 			remapper.readClassPath(modCompiles);
 			remapper.readClassPath(mc);
 			remapper.readClassPath(mcDeps);

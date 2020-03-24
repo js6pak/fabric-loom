@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import net.fabricmc.tinyremapper.NonClassCopyMode;
 import org.gradle.api.Project;
 import org.gradle.api.Task;
 import org.gradle.api.file.RegularFileProperty;
@@ -109,7 +110,7 @@ public class RemapJarTask extends Jar {
 		TinyRemapper remapper = remapperBuilder.build();
 
 		try (OutputConsumerPath outputConsumer = new OutputConsumerPath(output)) {
-			outputConsumer.addNonClassFiles(input);
+			outputConsumer.addNonClassFiles(input, NonClassCopyMode.FIX_META_INF, null);
 			remapper.readClassPath(classpath);
 			remapper.readInputs(input);
 			remapper.apply(outputConsumer);

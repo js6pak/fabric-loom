@@ -55,6 +55,7 @@ import net.fabricmc.loom.LoomGradleExtension;
 public class RunConfig {
 	public String configName;
 	public String projectName;
+	public String moduleName;
 	public String mainClass;
 	public String runDir;
 	public String vmArgs;
@@ -65,7 +66,7 @@ public class RunConfig {
 		Element root = this.addXml(doc, "component", ImmutableMap.of("name", "ProjectRunConfigurationManager"));
 		root = addXml(root, "configuration", ImmutableMap.of("default", "false", "name", configName, "type", "Application", "factoryName", "Application"));
 
-		this.addXml(root, "module", ImmutableMap.of("name", projectName));
+		this.addXml(root, "module", ImmutableMap.of("name", moduleName));
 		this.addXml(root, "option", ImmutableMap.of("name", "MAIN_CLASS_NAME", "value", mainClass));
 		this.addXml(root, "option", ImmutableMap.of("name", "WORKING_DIRECTORY", "value", runDir));
 
@@ -104,7 +105,19 @@ public class RunConfig {
 
 	private static void populate(Project project, LoomGradleExtension extension, RunConfig runConfig, String mode) {
 		runConfig.projectName = project.getName();
-		runConfig.runDir = "file://$PROJECT_DIR$/" + extension.runDir;
+
+		StringBuilder stringBuilder = new StringBuilder(runConfig.projectName);
+		Project parent = project;
+		while (true) {
+			parent = parent.getParent();
+			if(parent == null)
+				break;
+
+			stringBuilder.insert(0, parent.getName() + ".");
+		}
+		runConfig.moduleName = stringBuilder.toString();
+
+		runConfig.runDir = "file://$PROJECT_DIR$/" + (runConfig.moduleName.indexOf('.') == -1 ? "" : runConfig.moduleName.substring(runConfig.moduleName.indexOf('.') + 1).replace('.', '/')) + "/" + extension.runDir;
 		runConfig.javaVersion = project.getConvention().getPlugin(JavaPluginConvention.class).getTargetCompatibility().toString();
 
 		switch (extension.getLoaderLaunchMethod()) {
@@ -186,7 +199,8 @@ public class RunConfig {
 
 		dummyConfig = dummyConfig.replace("%NAME%", configName);
 		dummyConfig = dummyConfig.replace("%MAIN_CLASS%", mainClass);
-		dummyConfig = dummyConfig.replace("%MODULE%", projectName);
+		dummyConfig = dummyConfig.replace("%MODULE%", moduleName);
+		dummyConfig = dummyConfig.replace("%RUN_DIR%", runDir);
 		dummyConfig = dummyConfig.replace("%PROGRAM_ARGS%", programArgs.replaceAll("\"", "&quot;"));
 		dummyConfig = dummyConfig.replace("%VM_ARGS%", vmArgs.replaceAll("\"", "&quot;"));
 

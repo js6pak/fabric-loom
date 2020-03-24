@@ -58,6 +58,7 @@ public class LoomGradleExtension {
 	public boolean autoGenIDERuns = true;
 	public boolean extractJars = false;
 	public String customManifest = null;
+	public String side = "both";
 
 	private boolean bulldozeMappings;
 	private File atFile;

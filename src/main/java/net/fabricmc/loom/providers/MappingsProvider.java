@@ -428,7 +428,7 @@ public class MappingsProvider extends LogicalDependencyProvider {
 
 			project.getLogger().lifecycle(":populating field names");
 			new CommandProposeFieldNames().run(new String[] {
-					minecraftProvider.getMergedJar().getAbsolutePath(),
+					minecraftProvider.getJar().getAbsolutePath(),
 					MAPPINGS_TINY_BASE.getAbsolutePath(),
 					MAPPINGS_TINY.getAbsolutePath()
 			});

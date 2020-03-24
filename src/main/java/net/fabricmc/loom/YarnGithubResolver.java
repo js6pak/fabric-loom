@@ -7,6 +7,28 @@
  */
 package net.fabricmc.loom;
 
+import com.google.common.hash.Hasher;
+import com.google.common.hash.Hashing;
+import groovy.lang.Closure;
+import groovy.lang.ExpandoMetaClass;
+import net.fabricmc.loom.dependencies.ComputedDependency;
+import net.fabricmc.loom.mcp.AlphaMcpConverter;
+import net.fabricmc.loom.mcp.McpConverter;
+import net.fabricmc.loom.mcp.McpMappingContainer;
+import net.fabricmc.loom.mcp.beta.BetaMcpConverter;
+import net.fabricmc.loom.providers.mappings.IMappingAcceptor;
+import net.fabricmc.loom.providers.mappings.TinyReader;
+import net.fabricmc.loom.providers.mappings.TinyWriter;
+import net.fabricmc.loom.util.DownloadUtil;
+import net.fabricmc.mappings.EntryTriple;
+import org.apache.commons.io.IOUtils;
+import org.gradle.api.Action;
+import org.gradle.api.Project;
+import org.gradle.api.artifacts.Dependency;
+import org.gradle.api.file.FileCollection;
+import org.gradle.api.logging.Logger;
+import org.gradle.api.tasks.TaskDependency;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -24,37 +46,13 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 
-import net.fabricmc.loom.mcp.AlphaMcpConverter;
-import net.fabricmc.loom.mcp.McpConverter;
-import net.fabricmc.loom.mcp.McpMappingContainer;
-import net.fabricmc.loom.mcp.beta.BetaMcpConverter;
-import org.apache.commons.io.IOUtils;
-import org.gradle.api.Action;
-import org.gradle.api.Project;
-import org.gradle.api.artifacts.Dependency;
-import org.gradle.api.file.FileCollection;
-import org.gradle.api.logging.Logger;
-import org.gradle.api.tasks.TaskDependency;
-
-import com.google.common.hash.Hasher;
-import com.google.common.hash.Hashing;
-
-import groovy.lang.Closure;
-import groovy.lang.ExpandoMetaClass;
-
-import net.fabricmc.loom.dependencies.ComputedDependency;
-import net.fabricmc.loom.providers.mappings.IMappingAcceptor;
-import net.fabricmc.loom.providers.mappings.TinyReader;
-import net.fabricmc.loom.providers.mappings.TinyWriter;
-import net.fabricmc.loom.util.DownloadUtil;
-import net.fabricmc.mappings.EntryTriple;
-
 public class YarnGithubResolver {
 	private static final String DEFAULT_REPO = "FabricMC/yarn";
 	private static final String DOWNLOAD_URL = "https://api.github.com/repos/%s/zipball/%s";
 	private static final Action<DownloadSpec> NOOP = spec -> {
 	};
 	final Function<Path, FileCollection> fileFactory;
+	private final LoomGradleExtension extension;
 	private final Path globalCache, projectCache;
 	private final Supplier<File> mcJar;
 	final Logger logger;
@@ -69,13 +67,13 @@ public class YarnGithubResolver {
 	}
 
 	public YarnGithubResolver(Project project) {
-		LoomGradleExtension extension = project.getExtensions().getByType(LoomGradleExtension.class);
+		extension = project.getExtensions().getByType(LoomGradleExtension.class);
 		globalCache = extension.getUserCache().toPath();
 		createDirectory(globalCache);
 		projectCache = extension.getRootProjectPersistentCache().toPath();
 		createDirectory(projectCache);
 
-		mcJar = () -> extension.getMinecraftProvider().getMergedJar();
+		mcJar = () -> extension.getMinecraftProvider().getJar();
 
 		logger = project.getLogger();
 		fileFactory = project::files;
@@ -184,6 +182,9 @@ public class YarnGithubResolver {
 	}
 
 	public Dependency mcp(McpConverter mcpConverter, String version, String url, boolean force, Action<McpMappingContainer> containerAction) {
+		if(extension.side.equals("both"))
+			extension.side = "client";
+
 		McpMappingContainer mappings = new McpMappingContainer(version);
 		containerAction.execute(mappings);
 
