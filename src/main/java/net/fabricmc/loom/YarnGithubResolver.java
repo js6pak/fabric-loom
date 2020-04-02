@@ -264,7 +264,7 @@ public class YarnGithubResolver {
 
 		String rawHtml;
 		try {
-			rawHtml = IOUtils.toString(new GZIPInputStream(new FileInputStream(dest.toFile())), StandardCharsets.UTF_8);
+			rawHtml = IOUtils.toString(new FileInputStream(dest.toFile()), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new RuntimeException("Unable to read mediafire HTML", e);
 		}

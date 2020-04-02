@@ -24,16 +24,18 @@
 
 package net.fabricmc.loom.util;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.nio.charset.StandardCharsets;
-
 import com.google.common.io.Files;
 import org.apache.commons.io.FileUtils;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.GZIPInputStream;
 
 public class DownloadUtil {
 	/**
@@ -105,7 +107,14 @@ public class DownloadUtil {
 		}
 
 		try { //Try download to the output
-			FileUtils.copyInputStreamToFile(connection.getInputStream(), to);
+			InputStream inputStream = connection.getInputStream();
+			String encoding = connection.getContentEncoding();
+			if (encoding != null) {
+				if (encoding.equals("gzip") || encoding.equals("zip") || encoding.equals("application/x-gzip-compressed")) {
+					inputStream = new GZIPInputStream(inputStream);
+				}
+			}
+			FileUtils.copyInputStreamToFile(inputStream, to);
 		} catch (IOException e) {
 			to.delete(); //Probably isn't good if it fails to copy/save
 			throw e;
