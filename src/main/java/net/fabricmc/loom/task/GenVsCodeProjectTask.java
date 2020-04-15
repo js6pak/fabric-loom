@@ -73,7 +73,7 @@ public class GenVsCodeProjectTask extends AbstractLoomTask {
 			throw new RuntimeException("Failed to write launch.json", e);
 		}
 
-		File runDir = new File(project.getRootDir(), extension.runDir);
+		File runDir = new File(project.getProjectDir(), extension.runDir);
 
 		if (!runDir.exists()) {
 			runDir.mkdirs();

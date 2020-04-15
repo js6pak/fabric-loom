@@ -8,9 +8,9 @@ plugins {
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-group = 'net.fabricmc'
+group = 'com.github.js6pak'
 archivesBaseName = project.name
-version = '0.2.7-SNAPSHOT'
+version = 'beta_mcp-SNAPSHOT'
 
 def build = "local"
 def ENV = System.getenv()

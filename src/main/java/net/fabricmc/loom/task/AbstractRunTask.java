@@ -103,7 +103,7 @@ public abstract class AbstractRunTask extends JavaExec {
 		}
 
 		args(argsSplit);
-		setWorkingDir(new File(getProject().getRootDir(), extension.runDir));
+		setWorkingDir(new File(getProject().getProjectDir(), extension.runDir));
 
 		super.exec();
 	}
