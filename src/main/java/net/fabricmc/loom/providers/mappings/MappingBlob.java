@@ -23,22 +23,15 @@
  */
 package net.fabricmc.loom.providers.mappings;
 
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.function.ObjIntConsumer;
-import java.util.function.UnaryOperator;
-import java.util.stream.Stream;
-
 import com.google.common.collect.Streams;
-
 import net.fabricmc.loom.providers.mappings.MappingBlob.Mapping;
 import net.fabricmc.loom.providers.mappings.MappingBlob.Mapping.Field;
 import net.fabricmc.loom.providers.mappings.MappingBlob.Mapping.Method;
+
+import java.util.*;
+import java.util.function.ObjIntConsumer;
+import java.util.function.UnaryOperator;
+import java.util.stream.Stream;
 
 public class MappingBlob implements IMappingAcceptor, Iterable<Mapping> {
 	public static class Mapping {
@@ -300,6 +293,9 @@ public class MappingBlob implements IMappingAcceptor, Iterable<Mapping> {
 	}
 
 	public MappingBlob rename(MappingBlob blob) {
+		if (blob == null)
+			return this;
+
 		MappingBlob remap = new MappingBlob();
 
 		UnaryOperator<String> classRemapper = name -> {

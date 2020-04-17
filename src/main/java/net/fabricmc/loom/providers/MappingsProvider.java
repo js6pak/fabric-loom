@@ -7,12 +7,34 @@
  */
 package net.fabricmc.loom.providers;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.net.UrlEscapers;
+import net.fabricmc.loom.LoomGradleExtension;
+import net.fabricmc.loom.dependencies.DependencyProvider;
+import net.fabricmc.loom.dependencies.LogicalDependencyProvider;
+import net.fabricmc.loom.providers.StackedMappingsProvider.MappingFile;
+import net.fabricmc.loom.providers.StackedMappingsProvider.MappingFile.MappingType;
+import net.fabricmc.loom.providers.mappings.*;
+import net.fabricmc.loom.providers.mappings.MappingBlob.InvertionTarget;
+import net.fabricmc.loom.providers.mappings.MappingBlob.Mapping;
+import net.fabricmc.loom.providers.mappings.MappingBlob.Mapping.Field;
+import net.fabricmc.loom.providers.mappings.MappingBlob.Mapping.Method;
+import net.fabricmc.loom.providers.mappings.MappingSplat.CombinedMapping;
+import net.fabricmc.loom.providers.mappings.MappingSplat.CombinedMapping.ArgOnlyMethod;
+import net.fabricmc.loom.providers.mappings.MappingSplat.CombinedMapping.CombinedField;
+import net.fabricmc.loom.providers.mappings.MappingSplat.CombinedMapping.CombinedMethod;
+import net.fabricmc.loom.util.Constants;
+import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
+import net.fabricmc.mappings.Mappings;
+import net.fabricmc.stitch.commands.CommandProposeFieldNames;
+import net.fabricmc.tinyremapper.IMappingProvider;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
+import org.gradle.api.Project;
+import org.gradle.api.logging.Logger;
+
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -20,59 +42,11 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
+import java.nio.file.*;
+import java.util.*;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
-
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.net.UrlEscapers;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-
-import org.gradle.api.Project;
-import org.gradle.api.logging.Logger;
-
-import net.fabricmc.loom.LoomGradleExtension;
-import net.fabricmc.loom.dependencies.DependencyProvider;
-import net.fabricmc.loom.dependencies.LogicalDependencyProvider;
-import net.fabricmc.loom.providers.StackedMappingsProvider.MappingFile;
-import net.fabricmc.loom.providers.StackedMappingsProvider.MappingFile.MappingType;
-import net.fabricmc.loom.providers.mappings.EnigmaReader;
-import net.fabricmc.loom.providers.mappings.MappingBlob;
-import net.fabricmc.loom.providers.mappings.MappingBlob.InvertionTarget;
-import net.fabricmc.loom.providers.mappings.MappingBlob.Mapping;
-import net.fabricmc.loom.providers.mappings.MappingBlob.Mapping.Field;
-import net.fabricmc.loom.providers.mappings.MappingBlob.Mapping.Method;
-import net.fabricmc.loom.providers.mappings.MappingSplat;
-import net.fabricmc.loom.providers.mappings.MappingSplat.CombinedMapping;
-import net.fabricmc.loom.providers.mappings.MappingSplat.CombinedMapping.ArgOnlyMethod;
-import net.fabricmc.loom.providers.mappings.MappingSplat.CombinedMapping.CombinedField;
-import net.fabricmc.loom.providers.mappings.MappingSplat.CombinedMapping.CombinedMethod;
-import net.fabricmc.loom.providers.mappings.TinyDuplicator;
-import net.fabricmc.loom.providers.mappings.TinyReader;
-import net.fabricmc.loom.providers.mappings.TinyV2toV1;
-import net.fabricmc.loom.providers.mappings.TinyWriter;
-import net.fabricmc.loom.util.Constants;
-import net.fabricmc.loom.util.TinyRemapperMappingsHelper;
-import net.fabricmc.mappings.Mappings;
-import net.fabricmc.stitch.commands.CommandProposeFieldNames;
-import net.fabricmc.tinyremapper.IMappingProvider;
 
 public class MappingsProvider extends LogicalDependencyProvider {
 	public interface MappingFactory {//IOException throwing BiFunction<String, String, IMappingProvider>
@@ -120,7 +94,7 @@ public class MappingsProvider extends LogicalDependencyProvider {
 
 		if (!MAPPINGS_TINY_BASE.exists() || !MAPPINGS_TINY.exists()) {
 			if (!MAPPINGS_DIR.exists()) {
-				MAPPINGS_DIR.mkdir();
+				MAPPINGS_DIR.mkdirs();
 			}
 
 			free: if (!MAPPINGS_TINY_BASE.exists()) {
@@ -181,72 +155,74 @@ public class MappingsProvider extends LogicalDependencyProvider {
 					}
 				}).findFirst();
 
-				MappingBlob intermediaries;
-				if (interProvider.isPresent()) {
-					MappingFile mappings = interProvider.get();
+				MappingBlob intermediaries = null;
+				if (minecraftProvider.useIntermediaries) {
+					if (interProvider.isPresent()) {
+						MappingFile mappings = interProvider.get();
 
-					if (mappingFiles.size() == 1) {
-						assert mappings == Iterables.getOnlyElement(mappingFiles);
+						if (mappingFiles.size() == 1) {
+							assert mappings == Iterables.getOnlyElement(mappingFiles);
 
-						project.getLogger().lifecycle(":extracting " + mappings.origin.getName());
-						switch (mappings.type) {
-						case TinyV1:
-							try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.origin.toPath(), null)) {
-								Files.copy(fileSystem.getPath("mappings/mappings.tiny"), MAPPINGS_TINY_BASE.toPath());
+							project.getLogger().lifecycle(":extracting " + mappings.origin.getName());
+							switch (mappings.type) {
+								case TinyV1:
+									try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.origin.toPath(), null)) {
+										Files.copy(fileSystem.getPath("mappings/mappings.tiny"), MAPPINGS_TINY_BASE.toPath());
+									}
+									break free;
+
+								case TinyGz:
+									FileUtils.copyInputStreamToFile(new GZIPInputStream(new FileInputStream(mappings.origin)), MAPPINGS_TINY_BASE);
+									break free;
+
+								case TinyV2:
+									TinyV2toV1.convert(mappings.origin.toPath(), MAPPINGS_TINY_BASE.toPath(), parameterNames);
+									break free;
+
+								case Enigma:
+								case Tiny:
+								default: //Shouldn't end up here if this is the only mapping file supplied
+									throw new IllegalStateException("Unexpected mappings type " + mappings.type + " from " + mappings.origin);
 							}
-							break free;
-
-						case TinyGz:
-							FileUtils.copyInputStreamToFile(new GZIPInputStream(new FileInputStream(mappings.origin)), MAPPINGS_TINY_BASE);
-							break free;
-
-						case TinyV2:
-							TinyV2toV1.convert(mappings.origin.toPath(), MAPPINGS_TINY_BASE.toPath(), parameterNames);
-							break free;
-
-						case Enigma:
-						case Tiny:
-						default: //Shouldn't end up here if this is the only mapping file supplied
-							throw new IllegalStateException("Unexpected mappings type " + mappings.type + " from " + mappings.origin);
 						}
-					}
 
-					project.getLogger().lifecycle(":loading intermediaries " + mappings.origin.getName());
-					switch (mappings.type) {
-					case Tiny:
-					case TinyV1:
-					case TinyV2:
-						try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.origin.toPath(), null)) {
-							//Would be nice to extract this out but then the file system is closed before the mappings can be read
-							TinyReader.readTiny(fileSystem.getPath("mappings/mappings.tiny"), "official", "intermediary", intermediaries = new MappingBlob());
+						project.getLogger().lifecycle(":loading intermediaries " + mappings.origin.getName());
+						switch (mappings.type) {
+							case Tiny:
+							case TinyV1:
+							case TinyV2:
+								try (FileSystem fileSystem = FileSystems.newFileSystem(mappings.origin.toPath(), null)) {
+									//Would be nice to extract this out but then the file system is closed before the mappings can be read
+									TinyReader.readTiny(fileSystem.getPath("mappings/mappings.tiny"), "official", "intermediary", intermediaries = new MappingBlob());
+								}
+								break;
+
+							case TinyGz:
+								TinyReader.readTiny(mappings.origin.toPath(), "official", "intermediary", intermediaries = new MappingBlob());
+								break;
+
+							case Enigma:
+							default: //Shouldn't end up here given Enigma won't be supplying the intermediaries
+								throw new IllegalStateException("Unexpected mappings type " + mappings.type + " from " + mappings.origin);
 						}
-						break;
-
-					case TinyGz:
-						TinyReader.readTiny(mappings.origin.toPath(), "official", "intermediary", intermediaries = new MappingBlob());
-						break;
-
-					case Enigma:
-					default: //Shouldn't end up here given Enigma won't be supplying the intermediaries
-						throw new IllegalStateException("Unexpected mappings type " + mappings.type + " from " + mappings.origin);
-					}
-				} else {
-					if (!intermediaryNames.exists()) {//Grab intermediary mappings from Github
-						project.getLogger().lifecycle(":downloading intermediaries " + intermediaryNames.getName());
-						FileUtils.copyURLToFile(new URL("https://github.com/FabricMC/intermediary/raw/master/mappings/" + UrlEscapers.urlPathSegmentEscaper().escape(minecraftVersion) + ".tiny"), intermediaryNames);
 					} else {
-						project.getLogger().lifecycle(":loading intermediaries " + intermediaryNames.getName());
-					}
+						if (!intermediaryNames.exists()) {//Grab intermediary mappings from Github
+							project.getLogger().lifecycle(":downloading intermediaries " + intermediaryNames.getName());
+							FileUtils.copyURLToFile(new URL("https://github.com/FabricMC/intermediary/raw/master/mappings/" + UrlEscapers.urlPathSegmentEscaper().escape(minecraftVersion) + ".tiny"), intermediaryNames);
+						} else {
+							project.getLogger().lifecycle(":loading intermediaries " + intermediaryNames.getName());
+						}
 
-					if (mappingFiles.isEmpty()) {
-						TinyDuplicator.duplicateV1Column(intermediaryNames.toPath(), MAPPINGS_TINY_BASE.toPath(), "intermediary", "named");
-						break free;
-					}
+						if (mappingFiles.isEmpty()) {
+							TinyDuplicator.duplicateV1Column(intermediaryNames.toPath(), MAPPINGS_TINY_BASE.toPath(), "intermediary", "named");
+							break free;
+						}
 
-					TinyReader.readTiny(intermediaryNames.toPath(), "official", "intermediary", intermediaries = new MappingBlob());
+						TinyReader.readTiny(intermediaryNames.toPath(), "official", "intermediary", intermediaries = new MappingBlob());
+					}
 				}
 
-				MappingBlob inversion = intermediaries.invert(InvertionTarget.MEMBERS);
+				MappingBlob inversion = intermediaries == null ? null : intermediaries.invert(InvertionTarget.MEMBERS);
 				MappingBlob mappings = new MappingBlob();
 				Map<String, MappingBlob> versionToIntermediaries = new HashMap<>();
 
@@ -310,7 +286,7 @@ public class MappingsProvider extends LogicalDependencyProvider {
 						throw new IllegalStateException("Unexpected mappings type " + mapping.type + " from " + mapping.origin);
 					}
 
-					if (nativeNames) {
+					if (nativeNames && minecraftProvider.useIntermediaries) {
 						MappingBlob renamer;
 						if (!minecraftVersion.equals(mapping.minecraftVersion)) {
 							renamer = versionToIntermediaries.computeIfAbsent(mapping.minecraftVersion, version -> {
@@ -341,17 +317,20 @@ public class MappingsProvider extends LogicalDependencyProvider {
 
 					for (Mapping classMapping : gains) {
 						//If the name has been lost since it was named there's no point including it
-						if (inversion.tryMapName(classMapping.from) == null) continue;
-						Mapping interMapping = inversion.get(classMapping.from);
+						Mapping interMapping = null;
+						if(inversion != null) {
+							if (inversion.tryMapName(classMapping.from) == null) continue;
+							interMapping = inversion.get(classMapping.from);
+						}
 
 						Mapping existingClass = mappings.get(classMapping.from);
 						if (existingClass.to() == null && !classMapping.from.equals(classMapping.to())) {
 							mappings.acceptClass(classMapping.from, classMapping.to());
 						}
-						assert interMapping.from.equals(existingClass.from);
+						assert interMapping == null || interMapping.from.equals(existingClass.from);
 
 						for (Method method : classMapping.methods()) {
-							if (!interMapping.hasMethod(method)) continue;
+							if (interMapping != null && !interMapping.hasMethod(method)) continue;
 
 							Method existingMethod = existingClass.method(method);
 							if (existingMethod.name() == null && !existingMethod.fromName.equals(method.name())) {
@@ -368,7 +347,7 @@ public class MappingsProvider extends LogicalDependencyProvider {
 						}
 
 						for (Field field : classMapping.fields()) {
-							if (!interMapping.hasField(field)) continue;
+							if (interMapping != null && !interMapping.hasField(field)) continue;
 
 							Field existingField = existingClass.field(field);
 							if (existingField.name() == null && !existingField.fromName.equals(field.name())) {
@@ -379,7 +358,7 @@ public class MappingsProvider extends LogicalDependencyProvider {
 				}
 
 				project.getLogger().lifecycle(":combining mappings");
-				MappingSplat combined = new MappingSplat(mappings.rename(inversion), intermediaries);
+				MappingSplat combined = new MappingSplat(mappings.rename(inversion), intermediaries == null ? mappings : intermediaries);
 
 				project.getLogger().lifecycle(":writing " + MAPPINGS_TINY_BASE.getName());
 				try (TinyWriter writer = new TinyWriter(MAPPINGS_TINY_BASE.toPath(), "official", "named", "intermediary")) {

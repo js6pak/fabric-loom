@@ -59,6 +59,7 @@ public class LoomGradleExtension {
 	public boolean extractJars = false;
 	public String customManifest = null;
 	public String side = "both";
+	public boolean useIntermediaries = true;
 
 	private boolean bulldozeMappings;
 	private File atFile;

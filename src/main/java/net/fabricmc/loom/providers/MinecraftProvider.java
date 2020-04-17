@@ -58,6 +58,7 @@ public class MinecraftProvider extends PhysicalDependencyProvider {
 	public String minecraftVersion;
 	public MinecraftVersionInfo versionInfo;
 	public String side;
+	public boolean useIntermediaries;
 
 	private File MINECRAFT_JSON;
 	private File MINECRAFT_CLIENT_JAR;
@@ -74,6 +75,7 @@ public class MinecraftProvider extends PhysicalDependencyProvider {
 	@Override
 	public void provide(DependencyInfo dependency, Project project, LoomGradleExtension extension, Consumer<Runnable> postPopulationScheduler) throws Exception {
 		this.side = extension.side;
+		this.useIntermediaries = extension.useIntermediaries;
 		minecraftVersion = dependency.getDependency().getVersion();
 		boolean offline = project.getGradle().getStartParameter().isOffline();
 
